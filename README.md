@@ -254,7 +254,6 @@ Add the following entries to `.gitignore`:
 # Environment variables and credentials
 .env
 credentials/
-*.json
 
 # Python virtual environment and cache
 venv/

@@ -428,14 +428,7 @@ def read_file(file_name, buffer):
     return df
 ```
 
-**Supported formats in this implementation:**
-
-- `.csv`
-- `.xlsx`
-
-Other formats, such as `.xlsb` and `.xlsm`, require additional handling before they can be supported reliably.
-
-## Task 1.2 — Connect to PostgreSQL
+### Task 1.2 — Connect to PostgreSQL
 
 ### Subtask 1.2.1 — Create the Database Utility Module
 
@@ -484,8 +477,6 @@ def create_connection_postgres():
     return engine
 ```
 
-The connection string combines the database username, password, host, port, and database name. These values are retrieved from `.env` rather than hardcoded into the script.
-
 #### 2. Load Data into PostgreSQL
 
 ```python
@@ -524,9 +515,7 @@ Parameters:
 For an **initial raw-data load**, `replace` can be convenient. 
 For **repeated ingestion**, choose an appropriate strategy (such as incremental or append) to avoid overwriting existing data or duplicating records.
 
-## Task 1.3 — Load Raw Data into the Bronze Layer
-
-**Estimated time:** 3–5 hours
+### Task 1.3 — Load Raw Data into the Bronze Layer
 
 ### Bronze Layer Principles
 
@@ -543,14 +532,18 @@ For this project, the Bronze tables are stored in the PostgreSQL `bronze` schema
 
 ### Subtask 1.3.1 — Create a Loader Script
 
-Each source table should have its own loader script in the `loader/` directory, for example:
+Each source table has its own loader script in the `loader/` directory:
 
 - `load_customer_master.py`
 - `load_distributor_master.py`
+- `load_distributor_orders.py`
 - `load_employee_master.py`
 - `load_product_master.py`
+- `load_promotion_program.py`
+- `load_return_transactions.py`
 - `load_sales_transaction.py`
 - `load_sales_target_auto.py`
+- `load_territory_mapping.py`
 
 A typical loader follows these steps:
 
@@ -561,7 +554,7 @@ A typical loader follows these steps:
 5. Add ingestion metadata if required.
 6. Load the DataFrame into the appropriate Bronze table.
 
-Example loader workflow:
+**A sample loader workflow from `load_sales_transaction.py`:**
 
 ```python
 import pandas as pd
@@ -574,35 +567,26 @@ from drive_utils import (
 
 from db_utils import load_to_postgres
 
-
 # Connect to Google Drive
 service = get_service_account()
 
-# Replace these values with the actual source file information
-file_id = "YOUR_FILE_ID"
-file_name = "YOUR_SOURCE_FILE.csv"
-
 # Download the source file into memory
-buffer = download_data(service, file_id)
+buffer = download_data(service, file_id = '1lpXfu1X3IF2_uPhO1uECSW0M1Ijucfbu')
 
 # Read the source file into a DataFrame
-data = read_file(file_name, buffer)
+data = read_file('sales_transactions.csv', buffer)
 
 # Record the ingestion timestamp
 data["recorded_at"] = pd.Timestamp.now()
 
 # Load the data into the Bronze schema
 load_to_postgres(
-    df=data,
-    table_name="your_table_name",
+    data,
+    table_name="Sales_Transaction",
     schema="bronze",
     if_exists="replace"
 )
 ```
-
-Replace the example file ID, file name, and table name with the actual values. The import statements assume that the scripts are run with the `loader/` directory on Python's import path.
-
-**Note:** `recorded_at` records the ingestion time, but it is not the same as source-file metadata or a unique batch identifier. If the pipeline needs source tracking, batch IDs, or ingestion logs, implement those explicitly.
 
 ### Subtask 1.3.2 — Verify the Bronze Tables
 
@@ -611,22 +595,188 @@ After running a loader, connect to the project database in pgAdmin and check the
 ```sql
 -- Check the number of rows loaded into a Bronze table
 SELECT COUNT(*)
-FROM bronze.your_table_name;
+FROM bronze.Sales_Transaction;
 
 -- Inspect a sample of the loaded data
 SELECT *
-FROM bronze.your_table_name
+FROM bronze.Sales_Transaction
 LIMIT 10;
 ```
+-- Results: COUNT: 119,101 rows
 
-Replace `your_table_name` with the actual table name.
+| Order ID | Order Date | Customer ID | Region | Province | Sales Channel | Employee ID | Product ID | Product Category | Quantity | Unit Price | Discount (%) | Gross Amount | Net Amount | Order Status | Payment Method | Payment Status | Recorded At |
+|---|---|---|---|---|---|---|---|---|---:|---:|---:|---:|---:|---|---|---|---|
+| ORD0010001 | 2024-08-22 | CUS01590 | Miền Nam | TP.HCM | Modern Trade | EMP1079 | PRD0055 | Thực phẩm | 109 | 8,500 | 2 | 926,500 | 908,000 | Delivered | Công nợ | Paid | 2026-08-25 00:31:46 |
+| ORD0010002 | 2024-12-28 | CUS01166 | Miền Nam | Vũng Tàu | E-commerce | EMP1092 | PRD0057 | Thực phẩm | 59 | 50,000 | 0 | 2,950,000 | 2,950,000 | Delivered | Công nợ | Paid | 2026-08-25 00:31:46 |
+| ORD0010002 | 2024-12-28 | CUS01166 | Miền Nam | Vũng Tàu | E-commerce | EMP1092 | PRD0036 | Thực phẩm | 9 | 30,000 | 0 | 270,000 | 270,000 | Delivering | Tiền mặt | Paid | 2026-08-25 00:31:46 |
+| ORD0010002 | 2024-12-28 | CUS01166 | Miền Nam | Vũng Tàu | E-commerce | EMP1092 | PRD0087 | Gia dụng | 7 | 15,000 | 0 | 105,000 | 105,000 | Delivering | Công nợ | Paid | 2026-08-25 00:31:46 |
+| ORD0010003 | 2024-03-19 | CUS01832 | Miền Trung | Quảng Ngãi | Modern Trade | EMP1047 | PRD0069 | Chăm sóc cá nhân | 34 | 40,000 | 0 | 1,360,000 | 1,360,000 | Delivered | Công nợ | Unpaid | 2026-08-25 00:31:46 |
+| ORD0010003 | 2024-03-19 | CUS01832 | Miền Trung | Quảng Ngãi | Modern Trade | EMP1047 | PRD0091 | Gia dụng | 95 | 12,000 | 10 | 1,140,000 | 1,026,000 | Delivered | Tiền mặt | Paid | 2026-08-25 00:31:46 |
+| ORD0010003 | 2024-03-19 | CUS01832 | Miền Trung | Quảng Ngãi | Modern Trade | EMP1047 | PRD0002 | Thức uống | 13 | 9,000 | 5 | 117,000 | 111,200 | Delivered | Công nợ | Paid | 2026-08-25 00:31:46 |
+| ORD0010004 | 2024-02-13 | CUS00345 | Miền Bắc | Hà Nội | Modern Trade | EMP1014 | PRD0056 | Thực phẩm | 64 | 10,000 | 10 | 640,000 | 576,000 | Delivered | Tiền mặt | Paid | 2026-08-25 00:31:46 |
+| ORD0010005 | 2024-03-11 | CUS00564 | Miền Trung | Huế | Traditional Trade | EMP1050 | PRD0035 | Thực phẩm | 86 | 18,000 | 10 | 1,548,000 | 1,393,200 | Delivered | Chuyển khoản | Unpaid | 2026-08-25 00:31:46 |
+| ORD0010006 | 2024-11-13 | CUS00573 | Miền Trung | Huế | Modern Trade | EMP1041 | PRD0024 | Thức uống | 19 | 40,000 | 0 | 760,000 | 760,000 | Delivered | Tiền mặt | Paid | 2026-08-25 00:31:46 |
 
-Check that:
 
-- The expected number of rows has been loaded.
-- The column names are correct.
-- The source values are preserved.
-- No unexpected truncation or encoding issues occurred.
-- The data was loaded into the intended schema and table.
+
+### Task 1.4 — Special Handling: Multi-Version Sales Target Plans
+
+The "sales_target_plan" file requires special handling because it may **contain multiple versions**, such as v1 and v2, either in separate files or in different sheets within the same Excel workbook.
+
+Unlike the other source tables, sales target data must preserve its version history. All versions must be extracted and loaded without unintentionally overwriting previously ingested versions.
+
+### Subtask 1.4.1 — Read Multiple Versions from Excel
+
+**File:** `loader/load_sales_target_auto.py`
+
+The existing workbook contains two sheets:
+
+- `Plan_v1_Original` — Original sales target plan (v1).
+- `Plan_v2_Adjustment_H2` — Adjusted sales target plan (v2).
+
+The **`sheet_name=None`** parameter instructs pandas to **read all sheets** into a dictionary of DataFrames, allowing **each version** to be **processed separately**.
+
+```python
+# Connect to Google Drive and download the source workbook
+service = get_service_account()
+
+buffer = download_data(
+    service,
+    file_id='1-BLii_-P0NQ4jlcG9ckbyfkZk54vo19s'
+)
+
+# Reset the buffer pointer before reading the workbook
+buffer.seek(0)
+
+# Read all sheets into a dictionary of DataFrames
+sheets = pd.read_excel(
+    buffer,
+    sheet_name=None,
+    engine="openpyxl"
+)
+
+# Extract each version into a separate DataFrame
+v1 = sheets["Plan_v1_Original"].copy()
+v2 = sheets["Plan_v2_Adjustment_H2"].copy()
+```
+
+### Subtask 1.4.2 — Create Version Metadata
+
+Create a metadata DataFrame to identify the source sheet and corresponding version.
+
+```python
+# Create metadata for the available sales target versions
+sales_target_files = pd.DataFrame([
+    {
+        "version_label": "v1",
+        "sheet_name": "Plan_v1_Original"
+    },
+    {
+        "version_label": "v2",
+        "sheet_name": "Plan_v2_Adjustment_H2"
+    }
+])
+```
+
+### Subtask 1.4.3 — Combine Versions into a Raw Dataset
+
+Combine the two versions into a single DataFrame while preserving their original columns and rows.
+
+```python
+# Combine v1 and v2 into a single DataFrame
+sales_targets_raw = pd.concat(
+    [v1, v2],
+    ignore_index=True
+)
+
+# Convert numeric month values into labels such as T1, T2, ..., T12
+sales_targets_raw["month_col"] = (
+    "T" + sales_targets_raw["month"].astype(str)
+)
+
+# Record the ingestion timestamp
+sales_targets_raw["recorded_at"] = pd.Timestamp.now()
+sales_target_files["recorded_at"] = pd.Timestamp.now()
+```
+
+`pd.concat()` **combines** the records from **both versions**. 
+The `month_col` field **converts** the **numeric month** into a **consistent label**, such as `T1` for January and `T12` for December.
+
+### Subtask 1.4.4 — Load the Data into PostgreSQL Bronze
+
+Load the version metadata and combined target records into two separate Bronze tables.
+
+```python
+# Load sales target version metadata
+load_to_postgres(
+    sales_target_files,
+    "sales_target_files",
+    schema="bronze",
+    if_exists="replace"
+)
+
+# Load all sales target records
+load_to_postgres(
+    sales_targets_raw,
+    "sales_targets_raw",
+    schema="bronze",
+    if_exists="replace"
+)
+```
+
+### Subtask 1.4.5 — Validate the Loaded Data
+
+Check the available versions:
+
+```sql
+SELECT DISTINCT version_label
+FROM bronze.sales_target_files
+ORDER BY version_label;
+```
+-- Result:
+| version_label | 
+|---|
+|v1|
+|v2|
+
+
+Check the months:
+```sql
+SELECT DISTINCT month_col
+FROM bronze.sales_targets_raw
+ORDER BY month_col;
+```
+-- Result:
+| month_col |
+|---|
+|T1|
+|T2|
+|T3|
+|T4|
+|T5|
+|T6|
+|T7|
+|T8|
+|T9|
+|T10|
+|T11|
+|T12|
+
+Check the number of records by version:
+
+```sql
+SELECT
+    plan_version,
+    COUNT(*) AS row_count
+FROM bronze.sales_targets_raw
+GROUP BY plan_version
+ORDER BY plan_version;
+```
+-- Result:
+| plan_version | row_count |
+|---|---|
+|v1|	1332|
+|v2|	618|
+
 
 

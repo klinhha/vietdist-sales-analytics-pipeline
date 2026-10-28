@@ -62,6 +62,9 @@ The Gold layer follows dimensional modeling principles, separating descriptive d
 
 ### Dimension Tables
 
+<details>
+<summary>View dimension tables</summary>
+
 | Table | Description |
 |---|---|
 | `dim_date` | Calendar attributes for date-based analysis, including month, quarter, and year. |
@@ -70,7 +73,12 @@ The Gold layer follows dimensional modeling principles, separating descriptive d
 | `dim_products` | Product attributes, categories, pricing, and cost information. |
 | `dim_distributors` | Distributor profiles, tiers, channels, and historical attributes. |
 
+</details>
+
 ### Fact Tables
+
+<details>
+<summary>View fact tables</summary>
 
 | Table | Description |
 |---|---|
@@ -79,12 +87,19 @@ The Gold layer follows dimensional modeling principles, separating descriptive d
 | `fact_returns` | Product return records and associated return amounts and statuses. |
 | `fact_distributor_orders` | Distributor order lines, ordered and delivered quantities, delivery performance, and payment terms. |
 
+</details>
+
 ### Analytical Data Marts
+
+<details>
+<summary>View analytical data marts</summary>
 
 | Table | Description |
 |---|---|
 | `mart_sales_vs_target` | Combines actual sales and target data to support monthly performance comparisons. |
 | `mart_distributor_performance` | Consolidates distributor performance metrics, including order fulfillment, fill rates, and on-time delivery. |
+
+</details>
 
 ## 5. Project Structure
 
@@ -138,7 +153,9 @@ source venv/bin/activate
 # Install all required libraries listed in requirement.txt
 pip install -r requirement.txt
 ```
-**Libraries in `requirement.txt`**
+
+<details>
+<summary>Libraries in 'requirement.txt'</summary>
 
 | Library | Purpose |
 |---|---|
@@ -149,6 +166,8 @@ pip install -r requirement.txt
 | `google-api-python-client` | Provides Python tools for accessing Google APIs, including Google Drive. |
 | `google-auth` | Handles authentication with Google services, including service account credentials. |
 | `python-dotenv` | Loads environment variables from a `.env` file. |
+
+</details>
 
 
 ### 2. Initialize the PostgreSQL Database

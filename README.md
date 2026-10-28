@@ -126,42 +126,7 @@ vietdist_analytics/
 
 ## 7. Analytical Journey
 ### Phase 0 - ENVIRONMENT SETUP
-### 1. Objective
-
-Install and configure all required tools, then verify that they work correctly before working with any data.
-
-### 2. Install Required Tools
-
-1. **Python 3.11 or later**
-   - Download and install Python from [python.org](https://www.python.org/downloads/).
-   - Verify the installation in the terminal:
-
-   ```bash
-   python3 --version
-   ```
-
-2. **PostgreSQL 16**
-   - Download and install PostgreSQL from [postgresql.org](https://www.postgresql.org/download/).
-   - Set a password for the `postgres` user during installation and store it securely.
-
-3. **Visual Studio Code**
-   - Install [VS Code](https://code.visualstudio.com/).
-   - Install the **Python** and **SQLTools** extensions.
-
-4. **Git and GitHub**
-   - Install [Git](https://git-scm.com/downloads).
-   - Create a repository on [GitHub](https://github.com/).
-   - Clone the repository to your local machine.
-
-   Verify Git is installed:
-
-   ```bash
-   git --version
-   ```
-
-### 3. Create a Python Virtual Environment
-
-Open the terminal in the project root directory and run:
+### 1. Create a Python Virtual Environment
 
 ```bash
 # Create a virtual environment
@@ -185,26 +150,14 @@ pip install -r requirement.txt
 | `google-auth` | Handles authentication with Google services, including service account credentials. |
 | `python-dotenv` | Loads environment variables from a `.env` file. |
 
-After installation, verify the environment and installed packages:
 
-```bash
-python --version
-pip list
-```
+### 2. Initialize the PostgreSQL Database
 
-### 4. Initialize the PostgreSQL Database
-
-Open pgAdmin and connect to your PostgreSQL server.
-
-Create a dedicated database for the project:
 
 ```sql
+-- Create a dedicated database for the project om PostgreSQL
 CREATE DATABASE postgres;
-```
 
-Connect to `vietdist_dw`, open the Query Tool, and create the three schemas:
-
-```sql
 -- Create the Medallion Architecture schemas
 CREATE SCHEMA bronze;
 CREATE SCHEMA silver;
@@ -223,7 +176,7 @@ ORDER BY schema_name;
 - **Silver:** Stores cleaned, standardized, and validated data.
 - **Gold:** Stores dimensional models, fact tables, and analytical marts.
 
-### 5. Configure Environment Variables
+### 3. Configure Environment Variables
 
 **Create** a file named **`.env`** in the project root directory. This file stores **configuration values** and **sensitive credentials** used by the Python scripts.
 
@@ -234,11 +187,13 @@ PG_PWD='database_password'
 PG_DATABASE_NAME='postgres'
 PG_HOST='localhost'
 PG_PORT='5432'
+
+# Google Service Account credentials
+GOOGLE_SERVICE_ACCOUNT_FILE=/absolute/path/to/service_account.json
+
+# Google Drive source folder
+GOOGLE_DRIVE_FOLDER_ID=your_google_drive_folder_id
 ```
-
-**Security Precautions**
-
-**Never commit** `.env` or service account JSON files to GitHub.
 
 Add the entries to `.gitignore`:
 
@@ -256,51 +211,11 @@ __pycache__/
 .DS_Store
 ```
 
-If `.env` and `credentials/` are not already listed in `.gitignore`, add them from the terminal:
-
-```bash
-echo '.env' >> .gitignore
-echo 'credentials/' >> .gitignore
-```
-
-**Important:** If a password or service account key is **accidentally committed** to a public repository, **treat it as compromised**. **Change** the exposed password or revoke and replace the affected key, then **remove** the exposed secret from the repository history where appropriate.
-
 ### Phase 1 — BRONZE LAYER: Source Connection & Ingestion
-
-### 1. Objective
-
-Establish a connection between Google Drive and PostgreSQL, automate the retrieval of source files, and load raw data into the Bronze layer.
-
-The Bronze layer stores ingested source data with minimal transformation, preserving the original information for subsequent cleaning and modeling in the Silver and Gold layers.
-
-**Data flow:**
-
-Google Drive → Python ingestion modules → PostgreSQL Bronze layer
 
 ### Task 1.1 — Connect to Google Drive and Read Source Files
 
-### Subtask 1.1.1 — Set Up Google Service Account
-
-The Google Service Account credentials are provided by the course.
-
-1. **Obtain** the service account JSON file.
-2. **Store** the JSON file locally in the **'config'** folder.
-3. **Share** the source Google Drive folder with the service account email address, granting it permission to read the required files.
-4. **Store** the JSON file path and Google Drive folder ID in **`.env`**.
-
-Example `.env` configuration:
-
-```dotenv
-# Google Service Account credentials
-GOOGLE_SERVICE_ACCOUNT_FILE=/absolute/path/to/service_account.json
-
-# Google Drive source folder
-GOOGLE_DRIVE_FOLDER_ID=your_google_drive_folder_id
-```
-
-The service account JSON contains **sensitive credentials** and **must not be committed** to GitHub.
-
-### Subtask 1.1.2 — Create the Google Drive Utility Module
+### Subtask 1.1.1 — Create the Google Drive Utility Module
 
 **File:** `loader/drive_utils.py`
 
@@ -333,23 +248,20 @@ load_dotenv()
 #### 2. Read Google Drive Configuration
 
 ```python
-# Retrieve the service account JSON path and Google Drive folder ID from .env
-# This avoids hardcoding configuration values directly into the Python code
+# Retrieve the service account JSON path and Google Drive folder ID from .env to avoid hardcoding configuration values directly into the Python code
 
 SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE")
 FOLDER_DRIVE_ID = os.getenv("GOOGLE_DRIVE_FOLDER_ID")
 
 # Define the service account permissions (OAuth scope)
-# Read-only access is sufficient because the pipeline only needs to retrieve source files
 
-SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
+SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]      # Read-only access is sufficient because the pipeline only needs to retrieve source files
 ```
 
 #### 3. Create the Google Drive Connection
 
 ```python
-# Create a reusable function that authenticates the service account
-# and returns a Google Drive API service client
+# Create a reusable function that authenticates the service account and returns a Google Drive API service client
 
 def get_service_account():
     credentials = service_account.Credentials.from_service_account_file(
@@ -367,8 +279,6 @@ def get_service_account():
     return service
 ```
 
-The function loads the service account credentials, applies the read-only permission scope, and returns a service client that other functions can use to access Google Drive.
-
 #### 4. Download a File into Memory
 
 ```python
@@ -381,7 +291,7 @@ def download_data(service, file_id):
     )
 
     # Create a buffer in RAM to store the downloaded file
-    buffer = BytesIO()
+    buffer = BytesIO()       #`BytesIO` allows the downloaded file to be read directly from memory, avoiding the need to save a temporary copy to the local disk.
 
     # Download the file in chunks to handle larger files
     downloader = MediaIoBaseDownload(
@@ -399,8 +309,6 @@ def download_data(service, file_id):
 
     return buffer
 ```
-
-`BytesIO` allows the downloaded file to be read directly from memory, avoiding the need to save a temporary copy to the local disk.
 
 #### 5. Read CSV and Excel Files
 
@@ -502,33 +410,7 @@ def load_to_postgres(
 data['recorded_at'] = pd.Timestamp.now()
 ```
 
-Parameters:
-
-| Parameter | Purpose |
-|---|---|
-| `df` | The DataFrame to load into PostgreSQL. |
-| `table_name` | The destination table name. |
-| `schema` | The destination schema; defaults to `bronze`. |
-| `if_exists` | Determines what happens when the table already exists. |
-
-**Important:** The current default, `if_exists="replace"`, **drops** and **recreates** an existing table. Use it only when replacing the table is **intentional**. 
-For an **initial raw-data load**, `replace` can be convenient. 
-For **repeated ingestion**, choose an appropriate strategy (such as incremental or append) to avoid overwriting existing data or duplicating records.
-
 ### Task 1.3 — Load Raw Data into the Bronze Layer
-
-### Bronze Layer Principles
-
-The Bronze layer stores source data with minimal transformation. It preserves source values so that cleaning and standardization can happen in the Silver layer.
-
-For this project, the Bronze tables are stored in the PostgreSQL `bronze` schema.
-
-| Principle | Description |
-|---|---|
-| Preserve source data | Avoid business transformations during ingestion. |
-| Retain source identifiers | Keep original identifiers and values available for downstream processing. |
-| Track ingestion | Record when data was loaded and which source file it came from where applicable. |
-| Support reprocessing | Retain raw data so downstream transformations can be rerun when needed. |
 
 ### Subtask 1.3.1 — Create a Loader Script
 
@@ -544,15 +426,6 @@ Each source table has its own loader script in the `loader/` directory:
 - `load_sales_transaction.py`
 - `load_sales_target_auto.py`
 - `load_territory_mapping.py`
-
-A typical loader follows these steps:
-
-1. Connect to Google Drive.
-2. Retrieve the required source file.
-3. Download the file into memory.
-4. Read the file into a pandas DataFrame.
-5. Add ingestion metadata if required.
-6. Load the DataFrame into the appropriate Bronze table.
 
 **A sample loader workflow from `load_sales_transaction.py`:**
 
@@ -621,11 +494,11 @@ LIMIT 10;
 
 ### Task 1.4 — Special Handling: Multi-Version Sales Target Plans
 
-The "sales_target_plan" file requires special handling because it may **contain multiple versions**, such as v1 and v2, either in separate files or in different sheets within the same Excel workbook.
+The `sales_target_plan` file requires special handling because it may **contain multiple versions**, such as v1 and v2, either in separate files or in different sheets within the same Excel workbook.
 
 Unlike the other source tables, sales target data must preserve its version history. All versions must be extracted and loaded without unintentionally overwriting previously ingested versions.
 
-### Subtask 1.4.1 — Read Multiple Versions from Excel
+### Subtask 1.4.1 — Read Multiple Versions from Excel and create metadata
 
 **File:** `loader/load_sales_target_auto.py`
 
@@ -633,8 +506,6 @@ The existing workbook contains two sheets:
 
 - `Plan_v1_Original` — Original sales target plan (v1).
 - `Plan_v2_Adjustment_H2` — Adjusted sales target plan (v2).
-
-The **`sheet_name=None`** parameter instructs pandas to **read all sheets** into a dictionary of DataFrames, allowing **each version** to be **processed separately**.
 
 ```python
 # Connect to Google Drive and download the source workbook
@@ -651,20 +522,14 @@ buffer.seek(0)
 # Read all sheets into a dictionary of DataFrames
 sheets = pd.read_excel(
     buffer,
-    sheet_name=None,
+    sheet_name=None,          # This parameter instructs pandas to read all sheets into a dictionary of DataFrames, allowing **each version** to be processed separately.
     engine="openpyxl"
 )
 
 # Extract each version into a separate DataFrame
 v1 = sheets["Plan_v1_Original"].copy()
 v2 = sheets["Plan_v2_Adjustment_H2"].copy()
-```
 
-### Subtask 1.4.2 — Create Version Metadata
-
-Create a metadata DataFrame to identify the source sheet and corresponding version.
-
-```python
 # Create metadata for the available sales target versions
 sales_target_files = pd.DataFrame([
     {
@@ -678,9 +543,7 @@ sales_target_files = pd.DataFrame([
 ])
 ```
 
-### Subtask 1.4.3 — Combine Versions into a Raw Dataset
-
-Combine the two versions into a single DataFrame while preserving their original columns and rows.
+### Subtask 1.4.3 — Combine Versions into a Raw Dataset and load the Data into PostgreSQL Bronze
 
 ```python
 # Combine v1 and v2 into a single DataFrame
@@ -697,16 +560,7 @@ sales_targets_raw["month_col"] = (
 # Record the ingestion timestamp
 sales_targets_raw["recorded_at"] = pd.Timestamp.now()
 sales_target_files["recorded_at"] = pd.Timestamp.now()
-```
 
-`pd.concat()` **combines** the records from **both versions**. 
-The `month_col` field **converts** the **numeric month** into a **consistent label**, such as `T1` for January and `T12` for December.
-
-### Subtask 1.4.4 — Load the Data into PostgreSQL Bronze
-
-Load the version metadata and combined target records into two separate Bronze tables.
-
-```python
 # Load sales target version metadata
 load_to_postgres(
     sales_target_files,
@@ -726,45 +580,18 @@ load_to_postgres(
 
 ### Subtask 1.4.5 — Validate the Loaded Data
 
-Check the available versions:
-
 ```sql
+-- Check the available versions
 SELECT DISTINCT version_label
 FROM bronze.sales_target_files
 ORDER BY version_label;
-```
--- Result:
-| version_label | 
-|---|
-|v1|
-|v2|
 
-
-Check the months:
-```sql
+-- Check the months
 SELECT DISTINCT month_col
 FROM bronze.sales_targets_raw
 ORDER BY month_col;
-```
--- Result:
-| month_col |
-|---|
-|T1|
-|T2|
-|T3|
-|T4|
-|T5|
-|T6|
-|T7|
-|T8|
-|T9|
-|T10|
-|T11|
-|T12|
 
-Check the number of records by version:
-
-```sql
+-- Check the number of records by version
 SELECT
     plan_version,
     COUNT(*) AS row_count
@@ -772,11 +599,6 @@ FROM bronze.sales_targets_raw
 GROUP BY plan_version
 ORDER BY plan_version;
 ```
--- Result:
-| plan_version | row_count |
-|---|---|
-|v1|	1332|
-|v2|	618|
-
+-- Result: There are 2 available versions (v1: 1332 rows, v2: 618 rows), 12 months (T1 -> T12)
 
 

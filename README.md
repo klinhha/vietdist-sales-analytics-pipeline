@@ -189,12 +189,6 @@ WHERE schema_name IN ('bronze', 'silver', 'gold')
 ORDER BY schema_name;
 ```
 
-**Result:** Three rows containing `bronze`, `silver`, and `gold`.
-
-- **Bronze:** Stores source data with minimal transformation.
-- **Silver:** Stores cleaned, standardized, and validated data.
-- **Gold:** Stores dimensional models, fact tables, and analytical marts.
-
 ### 3. Configure Environment Variables
 
 **Create** a file named **`.env`** in the project root directory. This file stores **configuration values** and **sensitive credentials** used by the Python scripts.

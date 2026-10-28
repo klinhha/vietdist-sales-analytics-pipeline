@@ -427,19 +427,6 @@ data['recorded_at'] = pd.Timestamp.now()
 
 ### Subtask 1.3.1 — Create a Loader Script
 
-Each source table has its own loader script in the `loader/` directory:
-
-- `load_customer_master.py`
-- `load_distributor_master.py`
-- `load_distributor_orders.py`
-- `load_employee_master.py`
-- `load_product_master.py`
-- `load_promotion_program.py`
-- `load_return_transactions.py`
-- `load_sales_transaction.py`
-- `load_sales_target_auto.py`
-- `load_territory_mapping.py`
-
 **A sample loader workflow from `load_sales_transaction.py`:**
 
 ```python
@@ -476,8 +463,6 @@ load_to_postgres(
 
 ### Subtask 1.3.2 — Verify the Bronze Tables
 
-After running a loader, connect to the project database in pgAdmin and check the destination table.
-
 ```sql
 -- Check the number of rows loaded into a Bronze table
 SELECT COUNT(*)
@@ -488,7 +473,7 @@ SELECT *
 FROM bronze.Sales_Transaction
 LIMIT 10;
 ```
--- Results: COUNT: 119,101 rows
+- **Results**: COUNT: 119,101 rows
 
 | Order ID | Order Date | Customer ID | Region | Province | Sales Channel | Employee ID | Product ID | Product Category | Quantity | Unit Price | Discount (%) | Gross Amount | Net Amount | Order Status | Payment Method | Payment Status | Recorded At |
 |---|---|---|---|---|---|---|---|---|---:|---:|---:|---:|---:|---|---|---|---|
@@ -612,6 +597,6 @@ FROM bronze.sales_targets_raw
 GROUP BY plan_version
 ORDER BY plan_version;
 ```
--- Result: There are 2 available versions (v1: 1332 rows, v2: 618 rows), 12 months (T1 -> T12)
+- **Result**: There are 2 available versions (v1: 1332 rows, v2: 618 rows), 12 months (T1 -> T12)
 
 

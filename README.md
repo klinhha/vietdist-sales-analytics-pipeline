@@ -801,9 +801,6 @@ HAVING COUNT(*) > 1;
 
 Create a static calendar dimension covering 2022–2026, including calendar attributes and fiscal year information.
 
-<details>
-<summary><strong>View SQL — Create and Load dim_date</strong></summary>
-
 **Create the table structure**
 
 ```sql
@@ -839,11 +836,11 @@ INSERT INTO gold.dim_date (
 SELECT
     TO_CHAR(d, 'YYYYMMDD')::INTEGER AS date_key, -- Convert date to YYYYMMDD key
     d::DATE AS full_date,                       -- Store the full calendar date
-    EXTRACT(DAY FROM d)::INTEGER AS day,         -- Extract day
-    EXTRACT(MONTH FROM d)::INTEGER AS month,     -- Extract month number
-    TRIM(TO_CHAR(d, 'Month')) AS month_name,     -- Extract month name
-    EXTRACT(QUARTER FROM d)::INTEGER AS quarter, -- Extract calendar quarter
-    EXTRACT(YEAR FROM d)::INTEGER AS year,       -- Extract calendar year
+    EXTRACT(DAY FROM d)::INTEGER AS day,        
+    EXTRACT(MONTH FROM d)::INTEGER AS month,     
+    TRIM(TO_CHAR(d, 'Month')) AS month_name,     
+    EXTRACT(QUARTER FROM d)::INTEGER AS quarter, 
+    EXTRACT(YEAR FROM d)::INTEGER AS year,       
 
     -- Calculate fiscal year (September–August)
     CASE
@@ -891,16 +888,10 @@ HAVING COUNT(*) > 1;
 - Fiscal year = 2023 for both 2023-10-01 and 2024-01-01.
 - No duplicate date keys.
 
-</details>
-
----
 
 #### 3.1.2 — Create `dim_employees` with SCD Type 2 (Slowly Changing Dimension Type 2)
 
 Implement Slowly Changing Dimension Type 2 to **preserve employee history** when attributes such as region or team change.
-
-<details>
-<summary><strong>View SQL — Create and Load dim_employees</strong></summary>
 
 **Create the employee dimension table**
 
@@ -1071,16 +1062,10 @@ ORDER BY employee_id, effective_from;
 - Each employee has exactly one current record.
 - Historical records have `is_current = FALSE`; the latest records have `is_current = TRUE`.
 
-</details>
-
----
 
 #### 3.1.3 — Build `dim_customers` (SCD Type 1)
 
 Customer dimension stores customer information for sales analysis. It uses **SCD Type 1**, meaning updated customer information overwrites the previous values rather than maintaining historical versions.
-
-<details>
-<summary><strong>View SQL — Create and Load dim_customers</strong></summary>
 
 **Create the table**
 
@@ -1157,16 +1142,12 @@ GROUP BY customer_id
 HAVING COUNT(*) > 1;
 ```
 
-</details>
-
----
-
 #### 3.1.4 — Build `dim_products` (SCD Type 1)
 
 Product dimension stores product information, including category, pricing, cost, and stock quantity. It uses **SCD Type 1**, so changes to product attributes overwrite existing values.
 
 <details>
-<summary><strong>View SQL — Create and Load dim_products</strong></summary>
+<summary><strong>View SQL — Create and load dim_products</strong></summary>
 
 **Create the table**
 
@@ -1246,29 +1227,39 @@ HAVING COUNT(*) > 1;
 Distributor dimension is designed using **SCD Type 2** to support historical tracking of distributor information.
 
 <details>
-<summary><strong>View SQL — Create and Load dim_distributors</strong></summary>
+<summary><strong>View SQL — Create and load dim_distributors</strong></summary>
 
 **Create the table**
 
 ```sql
 CREATE TABLE gold.dim_distributors (
     distributor_key SERIAL PRIMARY KEY,
+
     distributor_id TEXT NOT NULL,
     distributor_name TEXT,
+
     tier TEXT,
     channel TEXT,
+
     province TEXT,
     region TEXT,
+
     contact_person TEXT,
     phone TEXT,
     email TEXT,
     tax_code TEXT,
+
     join_date DATE,
+
     credit_limit NUMERIC(18,2),
+
     status TEXT,
+
     assigned_supervisor_id TEXT,
+
     effective_from DATE,
     effective_to DATE,
+
     is_current BOOLEAN
 );
 ```
@@ -1279,40 +1270,59 @@ CREATE TABLE gold.dim_distributors (
 INSERT INTO gold.dim_distributors (
     distributor_id,
     distributor_name,
+
     tier,
     channel,
+
     province,
     region,
+
     contact_person,
     phone,
     email,
     tax_code,
+
     join_date,
+
     credit_limit,
+
     status,
+
     assigned_supervisor_id,
+
     effective_from,
     effective_to,
+
     is_current
 )
 SELECT
     TRIM(distributor_id),
     TRIM(distributor_name),
+
     TRIM(tier),
     TRIM(channel),
+
     TRIM(province),
     TRIM(region),
+
     TRIM(contact_person),
     phone::TEXT,
     TRIM(email),
     tax_code::TEXT,
+
     join_date,
+
     credit_limit::NUMERIC(18,2),
+
     TRIM(status),
+
     TRIM(assigned_supervisor_id),
+
     join_date AS effective_from,
     DATE '9999-12-31' AS effective_to,
+
     TRUE AS is_current
+
 FROM silver."DistributorMaster";
 ```
 
@@ -1334,16 +1344,11 @@ GROUP BY distributor_id
 HAVING SUM(CASE WHEN is_current = TRUE THEN 1 ELSE 0 END) <> 1;
 ```
 
-The validation query should return **0 rows** if every distributor has exactly one current record.
-
 </details>
 
 ### Task 3.2 — Build Fact Tables & Data Marts
 
 #### 3.2.1 — Build `fact_sales`
-
-<details>
-<summary><strong>View SQL — Create and Load fact_sales</strong></summary>
 
 **Create the table**
 
@@ -1381,20 +1386,26 @@ CREATE TABLE gold.fact_sales (
 ```sql
 INSERT INTO gold.fact_sales (
     order_id,
+
     order_date,
     date_key,
+
     employee_key,
     customer_key,
     product_key,
+
     region,
     province,
+
     channel,
+
     quantity,
     unit_price,
     discount_pct,
     discount_amount,
     gross_amount,
     net_amount,
+
     delivery_status,
     payment_method,
     payment_status
@@ -1457,14 +1468,10 @@ FROM gold.fact_sales
 LIMIT 5;
 ```
 
-The Silver and Gold row counts should match, and the missing dimension key check should ideally return 0.
-
-</details>
-
 #### 3.2.2 — Build `fact_targets`
 
 <details>
-<summary><strong>View SQL — Create and Load fact_targets</strong></summary>
+<summary><strong>View SQL — Create and load fact_targets</strong></summary>
 
 **Create the table**
 
@@ -1498,17 +1505,22 @@ CREATE TABLE gold.fact_targets (
 ```sql
 INSERT INTO gold.fact_targets (
     plan_version,
+
     version_date,
     effective_from,
     effective_to,
+
     employee_key,
     employee_id,
+
     date_key,
     year,
     month,
+
     target_revenue,
     target_quantity,
     target_new_customers,
+
     recorded_at,
     is_latest
 )
@@ -1586,10 +1598,12 @@ LIMIT 5;
 
 </details>
 
+---
+
 #### 3.2.3 — Build `fact_returns`
 
 <details>
-<summary><strong>View SQL — Create and Load fact_returns</strong></summary>
+<summary><strong>View SQL — Create and load fact_returns</strong></summary>
 
 **1. Create the table**
 
@@ -1710,10 +1724,12 @@ LIMIT 5;
 
 </details>
 
+--- 
+
 #### 3.2.4 — Build `fact_distributor_orders`
 
 <details>
-<summary><strong>View SQL — Create and Load fact_distributor_orders</strong></summary>
+<summary><strong>View SQL — Create and load fact_distributor_orders</strong></summary>
 
 **Create the table**
 
@@ -1759,20 +1775,26 @@ INSERT INTO gold.fact_distributor_orders (
     order_id,
     order_date,
     date_key,
+
     distributor_key,
     product_key,
+
     distributor_id,
     product_id,
+
     region,
     channel,
+
     product_category,
     qty_ordered,
     qty_delivered,
+
     fill_rate_pct,
     unit_price_list,
     distributor_price,
     gross_amount,
     delivered_amount,
+
     expected_delivery_date,
     actual_delivery_date,
     ontime_delivery,
@@ -1842,15 +1864,11 @@ FROM gold.fact_distributor_orders;
 
 </details>
 
+---
 
 ### Task 3.3 — Build Mart Tables
 
 #### 3.3.1 — Build `mart_sales_vs_target`
-
-This mart compares actual sales performance against monthly sales targets by employee and plan version.
-
-<details>
-<summary><strong>View SQL — Create and Load mart_sales_vs_target</strong></summary>
 
 **Create the table**
 
@@ -1955,10 +1973,12 @@ HAVING COUNT(*) > 1;
 
 </details>
 
+---
+
 #### 3.3.2 — Build `mart_distributor_performance`
 
 <details>
-<summary><strong>View SQL — Create and Load mart_distributor_performance</strong></summary>
+<summary><strong>View SQL — Create and load mart_distributor_performance</strong></summary>
 
 **Create the table**
 
@@ -2068,6 +2088,8 @@ HAVING COUNT(*) > 1;
 ```
 
 </details>
+
+--- 
 
 ## VI. Conclusions
 

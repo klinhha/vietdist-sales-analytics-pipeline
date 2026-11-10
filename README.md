@@ -1,14 +1,14 @@
 # [PYTHON] VietDist Sales Analytics Pipeline
 
-## 1. Project Overview
+## I. Project Overview
 
 VietDist Analytics is an **end-to-end** data warehousing and analytics engineering project designed to transform sales, customer, product, employee, distributor, sales target, and return data into a structured analytical platform.
 
-The project uses **Python** to ingest Excel and CSV files from Google Drive into PostgreSQL, SQL to clean and transform data through a Medallion Architecture, and dimensional modeling to prepare analytical datasets for business reporting.
+The project uses **Python** to ingest Excel and CSV files from Google Drive into PostgreSQL, SQL to clean and transform data through a **Medallion Architecture**, and dimensional modeling to prepare analytical datasets for business reporting.
 
 The platform aims to support sales performance monitoring, actual-versus-target analysis, employee performance evaluation, return analysis, and distributor delivery performance.
 
-## 2. Project Objectives
+### 1. Objectives
 
 - **Automate data ingestion** from Google Drive into PostgreSQL using Python.
 
@@ -22,7 +22,13 @@ The platform aims to support sales performance monitoring, actual-versus-target 
 
 - **Prepare** analytical datasets for reporting and decision-making.
 
-## 3. Medallion Architecture
+### 2. Who is this project for?
+
+- **Aspiring Data Engineers & Analytics Engineers**: To gain hands-on experience building data pipelines and data warehouses.
+- **Data Analysts & BI Developers**: To understand data transformation, dimensional modeling, and analytical data preparation.
+- **Business Stakeholders & Sales Managers**: To analyze sales performance, target achievement, returns, and distributor operations.
+
+### 3. Medallion Architecture
 
 The project follows a three-layer architecture to separate raw data ingestion, data transformation, and business-oriented modeling.
 
@@ -32,7 +38,7 @@ The project follows a three-layer architecture to separate raw data ingestion, d
 | **Silver** | Cleans and standardizes data, applies appropriate data types, handles duplicates, and validates data quality. | SQL transformations in PostgreSQL |
 | **Gold** | Organizes validated data into dimensional models, fact tables, and data marts for analytical queries and reporting. | SQL-based data modeling |
 
-### Data Flow
+### 4. Data Flow
 
 ```text
 Google Drive (Excel / CSV)
@@ -56,7 +62,7 @@ Dimensions / Facts / Marts
  Business Analysis & Reporting
 ```
 
-## 4. Data Modeling
+## II. Data Modeling
 
 The Gold layer follows dimensional modeling principles, separating descriptive dimensions from measurable business events and analytical summaries.
 
@@ -101,7 +107,7 @@ The Gold layer follows dimensional modeling principles, separating descriptive d
 
 </details>
 
-## 5. Project Structure
+## III. Project Structure
 
 The repository is organized into reusable ingestion modules, supporting configuration, documentation, and sample data.
 
@@ -129,7 +135,7 @@ vietdist_analytics/
 └── README.md
 ```
 
-## 6. Technology Stack
+## IV. Technology Stack
 
 - **Python:** Data ingestion and reusable loading utilities.
 - **Pandas & OpenPyXL:** Reading and processing CSV and Excel files.
@@ -139,7 +145,7 @@ vietdist_analytics/
 - **Git & GitHub:** Version control and project documentation.
 - **VS Code & pgAdmin & DBeaver:** Development and database management.
 
-## 7. Analytical Journey
+## V. Main Process
 ### Phase 0 - ENVIRONMENT SETUP
 ### 1. Create a Python Virtual Environment
 
@@ -228,7 +234,7 @@ __pycache__/
 
 ### Task 1.1 — Connect to Google Drive and Read Source Files
 
-### Subtask 1.1.1 — Create the Google Drive Utility Module
+### 1.1.1 — Create the Google Drive Utility Module
 
 **File:** `loader/drive_utils.py`
 
@@ -351,7 +357,7 @@ def read_file(file_name, buffer):
 
 ### Task 1.2 — Connect to PostgreSQL
 
-### Subtask 1.2.1 — Create the Database Utility Module
+### Create the Database Utility Module
 
 **File:** `loader/db_utils.py`
 
@@ -425,9 +431,9 @@ data['recorded_at'] = pd.Timestamp.now()
 
 ### Task 1.3 — Load Raw Data into the Bronze Layer
 
-### Subtask 1.3.1 — Create a Loader Script
+#### Create a Loader Script
 
-**A sample loader workflow from `load_sales_transaction.py`:**
+A sample loader workflow from **`load_sales_transaction.py`**:
 
 ```python
 import pandas as pd
@@ -461,7 +467,7 @@ load_to_postgres(
 )
 ```
 
-### Subtask 1.3.2 — Verify the Bronze Tables
+#### Verify the Bronze Table
 
 ```sql
 -- Check the number of rows loaded into a Bronze table
@@ -474,6 +480,9 @@ FROM bronze.Sales_Transaction
 LIMIT 10;
 ```
 - **Results**: COUNT: 119,101 rows
+
+<details>
+<summary><strong>View table Sales_Transaction</strong></summary>
 
 | Order ID | Order Date | Customer ID | Region | Province | Sales Channel | Employee ID | Product ID | Product Category | Quantity | Unit Price | Discount (%) | Gross Amount | Net Amount | Order Status | Payment Method | Payment Status | Recorded At |
 |---|---|---|---|---|---|---|---|---|---:|---:|---:|---:|---:|---|---|---|---|
@@ -488,6 +497,7 @@ LIMIT 10;
 | ORD0010005 | 2024-03-11 | CUS00564 | Miền Trung | Huế | Traditional Trade | EMP1050 | PRD0035 | Thực phẩm | 86 | 18,000 | 10 | 1,548,000 | 1,393,200 | Delivered | Chuyển khoản | Unpaid | 2026-08-25 00:31:46 |
 | ORD0010006 | 2024-11-13 | CUS00573 | Miền Trung | Huế | Modern Trade | EMP1041 | PRD0024 | Thức uống | 19 | 40,000 | 0 | 760,000 | 760,000 | Delivered | Tiền mặt | Paid | 2026-08-25 00:31:46 |
 
+</details>
 
 
 ### Task 1.4 — Special Handling: Multi-Version Sales Target Plans
@@ -496,7 +506,7 @@ The `sales_target_plan` file requires special handling because it may **contain 
 
 Unlike the other source tables, sales target data must preserve its version history. All versions must be extracted and loaded without unintentionally overwriting previously ingested versions.
 
-### Subtask 1.4.1 — Read Multiple Versions from Excel and create metadata
+#### Create a Loader Script
 
 **File:** `loader/load_sales_target_auto.py`
 
@@ -539,11 +549,7 @@ sales_target_files = pd.DataFrame([
         "sheet_name": "Plan_v2_Adjustment_H2"
     }
 ])
-```
 
-### Subtask 1.4.3 — Combine Versions into a Raw Dataset and load the Data into PostgreSQL Bronze
-
-```python
 # Combine v1 and v2 into a single DataFrame
 sales_targets_raw = pd.concat(
     [v1, v2],
@@ -576,7 +582,7 @@ load_to_postgres(
 )
 ```
 
-### Subtask 1.4.5 — Validate the Loaded Data
+#### Validate the Loaded Data
 
 ```sql
 -- Check the available versions
@@ -599,4 +605,1477 @@ ORDER BY plan_version;
 ```
 - **Result**: There are 2 available versions (v1: 1332 rows, v2: 618 rows), 12 months (T1 -> T12)
 
+### Phase 2 - SILVER LAYER: Clean & Standardize
+
+> **Note:** The examples below use **`Sales_Transaction`** as the sample dataset. The same profiling, transformation, and testing workflow is applied to the other Bronze tables, with adjustments based on their individual structures and business rules.
+
+### Task 2.1 — Data Profiling
+
+Profile all Bronze tables before applying transformations.
+
+```sql
+-- Check total rows
+SELECT COUNT(*) AS total_rows
+FROM bronze."Sales_Transaction";
+
+-- Check null values in key columns
+SELECT
+    COUNT(*) AS total_rows,
+    COUNT(*) FILTER (WHERE order_id IS NULL) AS null_order_id,
+    COUNT(*) FILTER (WHERE order_date IS NULL) AS null_order_date,
+    COUNT(*) FILTER (WHERE product_id IS NULL) AS null_product_id
+FROM bronze."Sales_Transaction";
+
+-- Identify potential duplicates
+SELECT
+    order_id,
+    product_id,
+    COUNT(*) AS duplicate_count
+FROM bronze."Sales_Transaction"
+GROUP BY order_id, product_id
+HAVING COUNT(*) > 1;
+```
+
+### Task 2.2 — Build the Silver Layer with SQL
+
+```sql
+CREATE TABLE silver."SalesTransaction" AS
+SELECT
+    TRIM(order_id::TEXT) AS order_id,
+
+    CAST(order_date AS DATE) AS order_date,
+    CAST(order_month AS INTEGER) AS order_month,
+    CAST(order_quarter AS INTEGER) AS order_quarter,
+    CAST(order_year AS INTEGER) AS order_year,
+
+    TRIM(customer_id::TEXT) AS customer_id,
+    region,
+    province,
+    channel,
+    TRIM(employee_id::TEXT) AS employee_id,
+    TRIM(product_id::TEXT) AS product_id,
+    TRIM(product_category::TEXT) AS product_category,
+
+    CAST(quantity AS INTEGER) AS quantity,
+    CAST(unit_price AS NUMERIC(18,2)) AS unit_price,
+    CAST(discount_pct AS NUMERIC) AS discount_pct,
+    CAST(discount_amount AS NUMERIC(18,2)) AS discount_amount,
+    CAST(gross_amount AS NUMERIC(18,2)) AS gross_amount,
+    CAST(net_amount AS NUMERIC(18,2)) AS net_amount,
+
+    delivery_status,
+    payment_method,
+    payment_status,
+
+    recorded_at
+FROM bronze."Sales_Transaction";
+```
+
+### Task 2.3 — Data Quality Testing
+
+```sql
+-- Check null primary keys
+SELECT COUNT(*) AS null_order_ids
+FROM silver."SalesTransaction"
+WHERE order_id IS NULL;
+
+-- Check duplicate keys
+SELECT order_id, COUNT(*)
+FROM silver."SalesTransaction"
+GROUP BY order_id
+HAVING COUNT(*) > 1;
+
+-- Check invalid values
+SELECT *
+FROM silver."SalesTransaction"
+WHERE order_date IS NULL
+   OR quantity < 0
+   OR unit_price < 0;
+
+-- Compare Bronze and Silver row counts
+SELECT
+    (SELECT COUNT(*)
+           FROM bronze."Sales_Transaction") AS bronze_rows,
+    (SELECT COUNT(*)
+           FROM silver."SalesTransaction") AS silver_rows;
+```
+
+### Task 2.4 — Special Handling: Sales Target Versioning
+
+Preserve both Sales Target versions (v1 and v2), standardize data types, and identify the effective target for each employee and month.
+
+| Target Period | v1 – Original Plan | v2 – July Adjustment | Effective Version |
+|---|---|---|---|
+| T1–T6 | Original targets | No adjustment | v1 |
+| T7–T12 | Original targets | Adjusted targets | v2 |
+
+**Build the Versioned Silver Table**
+
+```sql
+-- Create the versioned Sales Target table in the Silver layer
+CREATE TABLE silver."SalesTarget" AS
+
+-- Rank target versions for each employee and month
+WITH ranked_targets AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY employee_id, year, month
+            ORDER BY CAST(version_date AS DATE) DESC
+        ) AS version_rank  -- Rank versions by issue date (newest version = 1)
+
+    FROM bronze."sales_targets_raw"
+)
+
+SELECT
+    plan_version,  -- Original plan version (v1 or v2)
+
+    CAST(version_date AS DATE) AS version_date,  -- Convert date columns from TEXT to DATE
+    CAST(effective_from AS DATE) AS effective_from,
+    CAST(effective_to AS DATE) AS effective_to,
+
+    employee_id,
+    employee_name,
+    region,
+    team,
+
+    CAST(year AS INTEGER) AS year,
+    CAST(month AS INTEGER) AS month,
+    CAST(target_revenue AS NUMERIC(18,2)) AS target_revenue,  -- Monetary value
+    CAST(target_quantity AS INTEGER) AS target_quantity,   
+    CAST(target_new_customers AS INTEGER) AS target_new_customers,
+
+    recorded_at,
+
+    -- Flag the latest target version for each employee and month
+    CASE
+        WHEN version_rank = 1 THEN TRUE
+        ELSE FALSE
+    END AS is_latest
+
+FROM ranked_targets;
+```
+
+**Data Quality Testing**
+
+```sql
+-- Check data types
+SELECT
+    column_name,
+    data_type
+FROM information_schema.columns
+WHERE table_schema = 'silver'
+  AND table_name = 'SalesTarget'
+ORDER BY ordinal_position;
+
+-- Check records across versions
+SELECT
+    plan_version,
+    is_latest,
+    COUNT(*) AS row_count
+FROM silver."SalesTarget"
+GROUP BY plan_version, is_latest
+ORDER BY plan_version, is_latest;
+
+-- Check for multiple latest versions per employee and month
+SELECT
+    employee_id,
+    year,
+    month,
+    COUNT(*) AS latest_count
+FROM silver."SalesTarget"
+WHERE is_latest = TRUE
+GROUP BY employee_id, year, month
+HAVING COUNT(*) > 1;
+```
+-> **Results**:
+- Date, numeric, and timestamp columns have the intended data types.
+- Both v1 and v2 records are preserved.
+- Each employee-month combination has **no more than** one record marked as `is_latest = TRUE`.
+
+## PHASE 3  —  GOLD LAYER: Data Mart & Star Schema 
+
+### Task 3.1 — Build Dimension Tables
+
+#### 3.1.1 — Create `dim_date`
+
+Create a static calendar dimension covering 2022–2026, including calendar attributes and fiscal year information.
+
+<details>
+<summary><strong>View SQL — Create and Load dim_date</strong></summary>
+
+**Create the table structure**
+
+```sql
+-- Create an empty date dimension table
+CREATE TABLE gold.dim_date (
+    date_key INTEGER PRIMARY KEY,  -- Date key in YYYYMMDD format
+
+    full_date DATE NOT NULL,       -- Actual calendar date
+    day INTEGER,                   -- Day of the month
+    month INTEGER,                 -- Month number (1–12)
+    month_name TEXT,               -- Month name
+    quarter INTEGER,               -- Calendar quarter (1–4)
+    year INTEGER,                  -- Calendar year
+    fiscal_year INTEGER            -- Fiscal year (ends in August)
+);
+```
+
+**Populate the calendar table**
+
+```sql
+-- Generate dates from 2022-01-01 to 2026-12-31
+INSERT INTO gold.dim_date (
+    date_key,
+
+    full_date,
+    day,
+    month,
+    month_name,
+    quarter,
+    year,
+    fiscal_year
+)
+SELECT
+    TO_CHAR(d, 'YYYYMMDD')::INTEGER AS date_key, -- Convert date to YYYYMMDD key
+    d::DATE AS full_date,                       -- Store the full calendar date
+    EXTRACT(DAY FROM d)::INTEGER AS day,         -- Extract day
+    EXTRACT(MONTH FROM d)::INTEGER AS month,     -- Extract month number
+    TRIM(TO_CHAR(d, 'Month')) AS month_name,     -- Extract month name
+    EXTRACT(QUARTER FROM d)::INTEGER AS quarter, -- Extract calendar quarter
+    EXTRACT(YEAR FROM d)::INTEGER AS year,       -- Extract calendar year
+
+    -- Calculate fiscal year (September–August)
+    CASE
+        WHEN EXTRACT(MONTH FROM d) >= 9
+            THEN EXTRACT(YEAR FROM d)::INTEGER
+        ELSE EXTRACT(YEAR FROM d)::INTEGER - 1
+    END AS fiscal_year
+
+FROM generate_series(
+    '2022-01-01'::DATE,
+    '2026-12-31'::DATE,
+    '1 day'::INTERVAL
+) AS d;
+```
+
+**Validate the date dimension**
+
+```sql
+-- Check total records and date range
+SELECT
+    COUNT(*) AS total_dates,
+    MIN(full_date) AS start_date,
+    MAX(full_date) AS end_date
+FROM gold.dim_date;
+
+-- Validate fiscal year calculation
+SELECT
+    full_date,
+    fiscal_year
+FROM gold.dim_date
+WHERE full_date IN ('2023-10-01', '2024-01-01');
+
+-- Check for duplicate date keys
+SELECT
+    date_key,
+    COUNT(*) AS duplicate_count
+FROM gold.dim_date
+GROUP BY date_key
+HAVING COUNT(*) > 1;
+```
+
+-> **Results:**
+- Date range: 2022-01-01 to 2026-12-31.
+- Total records: 1,826 dates.
+- Fiscal year = 2023 for both 2023-10-01 and 2024-01-01.
+- No duplicate date keys.
+
+</details>
+
+---
+
+#### 3.1.2 — Create `dim_employees` with SCD Type 2 (Slowly Changing Dimension Type 2)
+
+Implement Slowly Changing Dimension Type 2 to **preserve employee history** when attributes such as region or team change.
+
+<details>
+<summary><strong>View SQL — Create and Load dim_employees</strong></summary>
+
+**Create the employee dimension table**
+
+```sql
+-- Create employee dimension with a surrogate primary key
+CREATE TABLE gold.dim_employees (
+    employee_key SERIAL PRIMARY KEY,  -- Unique key for each employee version
+
+    employee_id TEXT NOT NULL,        -- Business key identifying the employee
+    full_name TEXT,
+    gender TEXT,
+
+    date_of_birth DATE,
+    join_date DATE,
+
+    position TEXT,
+    region TEXT,
+
+    team TEXT,
+    email TEXT,
+    phone BIGINT,
+    status TEXT,
+
+    effective_from DATE,              -- Start date of this employee version
+    effective_to DATE,                -- End date of this employee version
+
+    is_current BOOLEAN                -- Indicates the current employee record
+);
+```
+
+**Build employee history using `LEAD()`**
+
+```sql
+-- Identify the next effective date for each employee
+WITH employee_history AS (
+    SELECT
+        employee_id,
+        full_name,
+        gender,
+        date_of_birth,
+        join_date,
+        position,
+        region,
+        team,
+        email,
+        phone,
+        status,
+        effective_date,
+
+        -- Retrieve the effective date of the next employee version
+        LEAD(effective_date) OVER (
+            PARTITION BY employee_id
+            ORDER BY effective_date
+        ) AS next_effective_date
+
+    FROM silver."EmployeeMaster"
+)
+
+-- Insert employee history into the Gold dimension
+INSERT INTO gold.dim_employees (
+    employee_id,
+    full_name,
+    gender,
+    date_of_birth,
+    join_date,
+    position,
+    region,
+    team,
+    email,
+    phone,
+    status,
+    effective_from,
+    effective_to,
+    is_current
+)
+
+SELECT
+    employee_id,
+    full_name,
+    gender,
+    date_of_birth,
+    join_date,
+    position,
+    region,
+    team,
+    email,
+    phone,
+    status,
+
+    effective_date AS effective_from,
+
+    -- Close the old version one day before the next version starts
+    COALESCE(
+        next_effective_date - INTERVAL '1 day',
+        DATE '9999-12-31'
+    )::DATE AS effective_to,
+
+    -- Mark the latest version as the current record
+    CASE
+        WHEN next_effective_date IS NULL THEN TRUE
+        ELSE FALSE
+    END AS is_current
+
+FROM employee_history;
+```
+**Validate employee history**
+
+```sql
+-- Check SCD Type 2 history for EMP1004
+SELECT
+    employee_key,
+    employee_id,
+    full_name,
+    region,
+    team,
+    effective_from,
+    effective_to,
+    is_current
+FROM gold.dim_employees
+WHERE employee_id = 'EMP1004'
+ORDER BY effective_from;
+```
+
+-> **Result**: EMP1004 has two records:
+
+| employee_id | region | team | effective_from | effective_to | is_current |
+|---|---|---|---|---|---|
+| EMP1004 | Miền Bắc | Team Bắc 1 | 2024-01-01 | 2024-06-30 | FALSE |
+| EMP1004 | Miền Trung | Team Trung 2 | 2024-07-01 | 9999-12-31 | TRUE |
+
+```sql
+-- Check that each employee has exactly one current record
+SELECT
+    employee_id,
+    COUNT(*) AS total_records,
+    SUM(
+        CASE WHEN is_current = TRUE THEN 1 ELSE 0 END
+    ) AS current_records
+FROM gold.dim_employees
+GROUP BY employee_id
+HAVING SUM(
+    CASE WHEN is_current = TRUE THEN 1 ELSE 0 END
+) <> 1;
+
+-- Check employees who changed region
+SELECT
+    employee_id,
+    full_name,
+    region,
+    team,
+    effective_from,
+    effective_to,
+    is_current
+FROM gold.dim_employees
+WHERE employee_id IN (
+    'EMP1018',
+    'EMP1004',
+    'EMP1092',
+    'EMP1026',
+    'EMP1078'
+)
+ORDER BY employee_id, effective_from;
+```
+
+-> **Results:**
+- EMP1004 has two records representing the old and new regions.
+- The five employees identified in the Change Log have their historical versions preserved.
+- Each employee has exactly one current record.
+- Historical records have `is_current = FALSE`; the latest records have `is_current = TRUE`.
+
+</details>
+
+---
+
+#### 3.1.3 — Build `dim_customers` (SCD Type 1)
+
+Customer dimension stores customer information for sales analysis. It uses **SCD Type 1**, meaning updated customer information overwrites the previous values rather than maintaining historical versions.
+
+<details>
+<summary><strong>View SQL — Create and Load dim_customers</strong></summary>
+
+**Create the table**
+
+```sql
+CREATE TABLE gold.dim_customers (
+    customer_key SERIAL PRIMARY KEY,
+    customer_id TEXT NOT NULL,
+    customer_name TEXT,
+    customer_type TEXT,
+    channel TEXT,
+    province TEXT,
+    region TEXT,
+    address TEXT,
+    phone TEXT,
+    tax_code TEXT,
+    join_date DATE,
+    credit_limit NUMERIC(18,2),
+    status TEXT
+);
+```
+
+**Load data from Silver**
+
+```sql
+INSERT INTO gold.dim_customers (
+    customer_id,
+    customer_name,
+    customer_type,
+    channel,
+    province,
+    region,
+    address,
+    phone,
+    tax_code,
+    join_date,
+    credit_limit,
+    status
+)
+SELECT
+    TRIM(customer_id),
+    TRIM(customer_name),
+    TRIM(customer_type),
+    TRIM(channel),
+    TRIM(province),
+    TRIM(region),
+    TRIM(address),
+    phone::TEXT,
+    tax_code::TEXT,
+    join_date,
+    credit_limit::NUMERIC(18,2),
+    TRIM(status)
+FROM silver."CustomerMaster";
+```
+
+**Validate the data**
+
+```sql
+-- Check loaded records
+SELECT *
+FROM gold.dim_customers
+LIMIT 5;
+
+-- Compare row counts between Silver and Gold
+SELECT
+    (SELECT COUNT(*) FROM silver."CustomerMaster") AS silver_count,
+    (SELECT COUNT(*) FROM gold.dim_customers) AS gold_count;
+
+-- Check duplicate customer IDs
+SELECT
+    customer_id,
+    COUNT(*) AS total_records
+FROM gold.dim_customers
+GROUP BY customer_id
+HAVING COUNT(*) > 1;
+```
+
+</details>
+
+---
+
+#### 3.1.4 — Build `dim_products` (SCD Type 1)
+
+Product dimension stores product information, including category, pricing, cost, and stock quantity. It uses **SCD Type 1**, so changes to product attributes overwrite existing values.
+
+<details>
+<summary><strong>View SQL — Create and Load dim_products</strong></summary>
+
+**Create the table**
+
+```sql
+CREATE TABLE gold.dim_products (
+    product_key SERIAL PRIMARY KEY,
+    product_id TEXT NOT NULL,
+    product_name TEXT,
+    category TEXT,
+    subcategory TEXT,
+    unit TEXT,
+    unit_price NUMERIC(18,2),
+    cost_price NUMERIC(18,2),
+    stock_quantity INTEGER,
+    status TEXT,
+    created_date DATE
+);
+```
+
+**Load data from Silver**
+
+```sql
+INSERT INTO gold.dim_products (
+    product_id,
+    product_name,
+    category,
+    subcategory,
+    unit,
+    unit_price,
+    cost_price,
+    stock_quantity,
+    status,
+    created_date
+)
+SELECT
+    TRIM(product_id),
+    TRIM(product_name),
+    TRIM(category),
+    TRIM(subcategory),
+    TRIM(unit),
+    unit_price::NUMERIC(18,2),
+    cost_price::NUMERIC(18,2),
+    stock_quantity::INTEGER,
+    TRIM(status),
+    created_date
+FROM silver."ProductMaster";
+```
+
+**Validate the data**
+
+```sql
+-- Check loaded records
+SELECT *
+FROM gold.dim_products
+LIMIT 5;
+
+-- Compare row counts between Silver and Gold
+SELECT
+    (SELECT COUNT(*) FROM silver."ProductMaster") AS silver_count,
+    (SELECT COUNT(*) FROM gold.dim_products) AS gold_count;
+
+-- Check duplicate product IDs
+SELECT
+    product_id,
+    COUNT(*) AS total_records
+FROM gold.dim_products
+GROUP BY product_id
+HAVING COUNT(*) > 1;
+```
+
+</details>
+
+---
+
+#### 3.1.5 — Build `dim_distributors` (SCD Type 2)
+
+Distributor dimension is designed using **SCD Type 2** to support historical tracking of distributor information.
+
+<details>
+<summary><strong>View SQL — Create and Load dim_distributors</strong></summary>
+
+**Create the table**
+
+```sql
+CREATE TABLE gold.dim_distributors (
+    distributor_key SERIAL PRIMARY KEY,
+    distributor_id TEXT NOT NULL,
+    distributor_name TEXT,
+    tier TEXT,
+    channel TEXT,
+    province TEXT,
+    region TEXT,
+    contact_person TEXT,
+    phone TEXT,
+    email TEXT,
+    tax_code TEXT,
+    join_date DATE,
+    credit_limit NUMERIC(18,2),
+    status TEXT,
+    assigned_supervisor_id TEXT,
+    effective_from DATE,
+    effective_to DATE,
+    is_current BOOLEAN
+);
+```
+
+**Load data from Silver**
+
+```sql
+INSERT INTO gold.dim_distributors (
+    distributor_id,
+    distributor_name,
+    tier,
+    channel,
+    province,
+    region,
+    contact_person,
+    phone,
+    email,
+    tax_code,
+    join_date,
+    credit_limit,
+    status,
+    assigned_supervisor_id,
+    effective_from,
+    effective_to,
+    is_current
+)
+SELECT
+    TRIM(distributor_id),
+    TRIM(distributor_name),
+    TRIM(tier),
+    TRIM(channel),
+    TRIM(province),
+    TRIM(region),
+    TRIM(contact_person),
+    phone::TEXT,
+    TRIM(email),
+    tax_code::TEXT,
+    join_date,
+    credit_limit::NUMERIC(18,2),
+    TRIM(status),
+    TRIM(assigned_supervisor_id),
+    join_date AS effective_from,
+    DATE '9999-12-31' AS effective_to,
+    TRUE AS is_current
+FROM silver."DistributorMaster";
+```
+
+**Validate the data**
+
+```sql
+-- Check loaded records
+SELECT *
+FROM gold.dim_distributors
+LIMIT 5;
+
+-- Check that each distributor has exactly one current record
+SELECT
+    distributor_id,
+    COUNT(*) AS total_records,
+    SUM(CASE WHEN is_current = TRUE THEN 1 ELSE 0 END) AS current_records
+FROM gold.dim_distributors
+GROUP BY distributor_id
+HAVING SUM(CASE WHEN is_current = TRUE THEN 1 ELSE 0 END) <> 1;
+```
+
+The validation query should return **0 rows** if every distributor has exactly one current record.
+
+</details>
+
+### Task 3.2 — Build Fact Tables & Data Marts
+
+#### 3.2.1 — Build `fact_sales`
+
+<details>
+<summary><strong>View SQL — Create and Load fact_sales</strong></summary>
+
+**Create the table**
+
+```sql
+CREATE TABLE gold.fact_sales (
+    sales_key BIGSERIAL PRIMARY KEY,
+
+    order_id TEXT NOT NULL,
+    order_date DATE NOT NULL,
+    date_key INTEGER,
+
+    employee_key INTEGER,
+    customer_key INTEGER,
+    product_key INTEGER,
+
+    region TEXT,
+    province TEXT,
+    channel TEXT,
+
+    quantity INTEGER,
+    unit_price NUMERIC(18,2),
+    discount_pct NUMERIC(10,2),
+    discount_amount NUMERIC(18,2),
+    gross_amount NUMERIC(18,2),
+    net_amount NUMERIC(18,2),
+
+    delivery_status TEXT,
+    payment_method TEXT,
+    payment_status TEXT
+);
+```
+
+**Load data from Silver**
+
+```sql
+INSERT INTO gold.fact_sales (
+    order_id,
+    order_date,
+    date_key,
+    employee_key,
+    customer_key,
+    product_key,
+    region,
+    province,
+    channel,
+    quantity,
+    unit_price,
+    discount_pct,
+    discount_amount,
+    gross_amount,
+    net_amount,
+    delivery_status,
+    payment_method,
+    payment_status
+)
+SELECT
+    s.order_id,
+    s.order_date,
+    TO_CHAR(s.order_date, 'YYYYMMDD')::INTEGER,
+
+    e.employee_key,
+    c.customer_key,
+    p.product_key,
+
+    TRIM(s.region),
+    TRIM(s.province),
+    TRIM(s.channel),
+
+    s.quantity,
+    s.unit_price::NUMERIC(18,2),
+    s.discount_pct::NUMERIC(10,2),
+    s.discount_amount::NUMERIC(18,2),
+    s.gross_amount::NUMERIC(18,2),
+    s.net_amount::NUMERIC(18,2),
+
+    TRIM(s.delivery_status),
+    TRIM(s.payment_method),
+    TRIM(s.payment_status)
+
+FROM silver."SalesTransaction" s
+
+LEFT JOIN gold.dim_employees e
+    ON s.employee_id = e.employee_id
+    AND s.order_date BETWEEN e.effective_from AND e.effective_to
+
+LEFT JOIN gold.dim_customers c
+    ON s.customer_id = c.customer_id
+
+LEFT JOIN gold.dim_products p
+    ON s.product_id = p.product_id;
+```
+
+**Validate the data**
+
+```sql
+-- Compare row counts between Silver and Gold
+SELECT
+    (SELECT COUNT(*) FROM silver."SalesTransaction") AS silver_count,
+    (SELECT COUNT(*) FROM gold.fact_sales) AS gold_count;
+
+-- Check missing dimension key mappings
+SELECT COUNT(*)
+FROM gold.fact_sales
+WHERE employee_key IS NULL
+   OR customer_key IS NULL
+   OR product_key IS NULL;
+
+-- Preview the loaded records
+SELECT *
+FROM gold.fact_sales
+LIMIT 5;
+```
+
+The Silver and Gold row counts should match, and the missing dimension key check should ideally return 0.
+
+</details>
+
+#### 3.2.2 — Build `fact_targets`
+
+<details>
+<summary><strong>View SQL — Create and Load fact_targets</strong></summary>
+
+**Create the table**
+
+```sql
+CREATE TABLE gold.fact_targets (
+    target_key BIGSERIAL PRIMARY KEY,
+
+    plan_version TEXT,
+    version_date DATE,
+    effective_from DATE,
+    effective_to DATE,
+
+    employee_key INTEGER,
+    employee_id TEXT,
+
+    date_key INTEGER,
+    year INTEGER,
+    month INTEGER,
+
+    target_revenue NUMERIC(18,2),
+    target_quantity INTEGER,
+    target_new_customers INTEGER,
+
+    recorded_at TIMESTAMP,
+    is_latest BOOLEAN
+);
+```
+
+**Load data from Silver and map employee keys**
+
+```sql
+INSERT INTO gold.fact_targets (
+    plan_version,
+    version_date,
+    effective_from,
+    effective_to,
+    employee_key,
+    employee_id,
+    date_key,
+    year,
+    month,
+    target_revenue,
+    target_quantity,
+    target_new_customers,
+    recorded_at,
+    is_latest
+)
+
+SELECT
+    t.plan_version,
+    t.version_date,
+    t.effective_from,
+    t.effective_to,
+
+    e.employee_key,
+    t.employee_id,
+
+    TO_CHAR(
+        MAKE_DATE(t.year, t.month, 1),
+        'YYYYMMDD'
+    )::INTEGER,
+
+    t.year,
+    t.month,
+
+    t.target_revenue,
+    t.target_quantity,
+    t.target_new_customers,
+
+    t.recorded_at,
+    t.is_latest
+
+FROM silver."SalesTarget" t
+
+LEFT JOIN gold.dim_employees e
+    ON t.employee_id = e.employee_id
+    AND MAKE_DATE(t.year, t.month, 1)
+        BETWEEN e.effective_from AND e.effective_to;
+```
+
+**Validate the data**
+
+```sql
+-- Compare row counts between Silver and Gold
+SELECT
+    (SELECT COUNT(*) FROM silver."SalesTarget") AS silver_count,
+    (SELECT COUNT(*) FROM gold.fact_targets) AS gold_count;
+
+-- Check missing employee key mappings
+SELECT COUNT(*)
+FROM gold.fact_targets
+WHERE employee_key IS NULL;
+
+-- Check target records by version
+SELECT
+    plan_version,
+    is_latest,
+    COUNT(*) AS total_records
+FROM gold.fact_targets
+GROUP BY plan_version, is_latest
+ORDER BY plan_version, is_latest;
+
+-- Check duplicate employee-month-version records
+SELECT
+    employee_id,
+    year,
+    month,
+    plan_version,
+    COUNT(*) AS total_records
+FROM gold.fact_targets
+GROUP BY employee_id, year, month, plan_version
+HAVING COUNT(*) > 1;
+
+-- Preview the loaded records
+SELECT *
+FROM gold.fact_targets
+LIMIT 5;
+```
+
+</details>
+
+#### 3.2.3 — Build `fact_returns`
+
+<details>
+<summary><strong>View SQL — Create and Load fact_returns</strong></summary>
+
+**1. Create the table**
+
+```sql
+CREATE TABLE gold.fact_returns (
+    return_key BIGSERIAL PRIMARY KEY,
+
+    return_id TEXT NOT NULL,
+    original_order_id TEXT,
+    return_date DATE NOT NULL,
+    date_key INTEGER,
+
+    customer_key INTEGER,
+    employee_key INTEGER,
+    product_key INTEGER,
+
+    customer_id TEXT,
+    employee_id TEXT,
+    product_id TEXT,
+
+    region TEXT,
+    province TEXT,
+
+    return_quantity INTEGER,
+    unit_price NUMERIC(18,2),
+    return_amount NUMERIC(18,2),
+
+    return_reason TEXT,
+    status TEXT
+);
+```
+
+**Load data from Silver and map dimension keys**
+
+```sql
+INSERT INTO gold.fact_returns (
+    return_id,
+    original_order_id,
+    return_date,
+    date_key,
+
+    customer_key,
+    employee_key,
+    product_key,
+
+    customer_id,
+    employee_id,
+    product_id,
+
+    region,
+    province,
+
+    return_quantity,
+    unit_price,
+    return_amount,
+
+    return_reason,
+    status
+)
+SELECT
+    r.return_id,
+    r.original_order_id,
+    r.return_date,
+
+    TO_CHAR(r.return_date, 'YYYYMMDD')::INTEGER,
+
+    c.customer_key,
+    e.employee_key,
+    p.product_key,
+
+    r.customer_id,
+    r.employee_id,
+    r.product_id,
+
+    TRIM(r.region),
+    TRIM(r.province),
+
+    r.return_quantity::INTEGER,
+    r.unit_price::NUMERIC(18,2),
+    r.return_amount::NUMERIC(18,2),
+
+    TRIM(r.return_reason),
+    TRIM(r.status)
+
+FROM silver."ReturnTransactions" r
+
+LEFT JOIN gold.dim_customers c
+    ON r.customer_id = c.customer_id
+
+LEFT JOIN gold.dim_employees e
+    ON r.employee_id = e.employee_id
+    AND r.return_date BETWEEN e.effective_from AND e.effective_to
+
+LEFT JOIN gold.dim_products p
+    ON r.product_id = p.product_id;
+```
+
+**Validate the data**
+
+```sql
+-- Compare row counts between Silver and Gold
+SELECT
+    (SELECT COUNT(*) FROM silver."ReturnTransactions") AS silver_count,
+    (SELECT COUNT(*) FROM gold.fact_returns) AS gold_count;
+
+-- Check missing dimension key mappings
+SELECT COUNT(*)
+FROM gold.fact_returns
+WHERE customer_key IS NULL
+   OR employee_key IS NULL
+   OR product_key IS NULL;
+
+-- Preview the loaded records
+SELECT *
+FROM gold.fact_returns
+LIMIT 5;
+```
+
+</details>
+
+#### 3.2.4 — Build `fact_distributor_orders`
+
+<details>
+<summary><strong>View SQL — Create and Load fact_distributor_orders</strong></summary>
+
+**Create the table**
+
+```sql
+CREATE TABLE gold.fact_distributor_orders (
+    distributor_order_key BIGSERIAL PRIMARY KEY,
+
+    order_id TEXT,
+    order_date DATE,
+    date_key INTEGER,
+
+    distributor_key INTEGER,
+    product_key INTEGER,
+
+    distributor_id TEXT,
+    product_id TEXT,
+
+    region TEXT,
+    channel TEXT,
+
+    product_category TEXT,
+    qty_ordered INTEGER,
+    qty_delivered INTEGER,
+
+    fill_rate_pct NUMERIC(10,2),
+    unit_price_list NUMERIC(18,2),
+    distributor_price NUMERIC(18,2),
+    gross_amount NUMERIC(18,2),
+    delivered_amount NUMERIC(18,2),
+
+    expected_delivery_date DATE,
+    actual_delivery_date DATE,
+    ontime_delivery TEXT,
+    delivery_status TEXT,
+    payment_terms TEXT
+);
+```
+
+**Load data from Silver and map dimension keys**
+
+```sql
+INSERT INTO gold.fact_distributor_orders (
+    order_id,
+    order_date,
+    date_key,
+    distributor_key,
+    product_key,
+    distributor_id,
+    product_id,
+    region,
+    channel,
+    product_category,
+    qty_ordered,
+    qty_delivered,
+    fill_rate_pct,
+    unit_price_list,
+    distributor_price,
+    gross_amount,
+    delivered_amount,
+    expected_delivery_date,
+    actual_delivery_date,
+    ontime_delivery,
+    delivery_status,
+    payment_terms
+)
+SELECT
+    TRIM(d.order_id),
+
+    d.order_date::DATE,
+
+    TO_CHAR(d.order_date::DATE, 'YYYYMMDD')::INTEGER,
+
+    dist.distributor_key,
+    p.product_key,
+
+    TRIM(d.distributor_id),
+    TRIM(d.product_id),
+    TRIM(d.region),
+    TRIM(d.channel),
+    TRIM(d.product_category),
+
+    d.qty_ordered::INTEGER,
+    d.qty_delivered::INTEGER,
+    d.fill_rate_pct::NUMERIC(10,2),
+    d.unit_price_list::NUMERIC(18,2),
+    d.distributor_price::NUMERIC(18,2),
+    d.gross_amount::NUMERIC(18,2),
+    d.delivered_amount::NUMERIC(18,2),
+    d.expected_delivery_date::DATE,
+    d.actual_delivery_date::DATE,
+
+    TRIM(d.ontime_delivery),
+    TRIM(d.delivery_status),
+    TRIM(d.payment_terms)
+
+FROM silver."DistributorOrders" d
+
+LEFT JOIN gold.dim_distributors dist
+    ON d.distributor_id = dist.distributor_id
+    AND d.order_date::DATE
+        BETWEEN dist.effective_from AND dist.effective_to
+
+LEFT JOIN gold.dim_products p
+    ON d.product_id = p.product_id;
+```
+
+**Validate the data**
+
+```sql
+-- Preview loaded records
+SELECT *
+FROM gold.fact_distributor_orders
+LIMIT 5;
+
+-- Check total records and missing dimension keys
+SELECT
+    COUNT(*) AS total_rows,
+    COUNT(*) FILTER (
+        WHERE distributor_key IS NULL
+    ) AS missing_distributor,
+    COUNT(*) FILTER (
+        WHERE product_key IS NULL
+    ) AS missing_product
+FROM gold.fact_distributor_orders;
+```
+
+</details>
+
+
+### Task 3.3 — Build Mart Tables
+
+#### 3.3.1 — Build `mart_sales_vs_target`
+
+This mart compares actual sales performance against monthly sales targets by employee and plan version.
+
+<details>
+<summary><strong>View SQL — Create and Load mart_sales_vs_target</strong></summary>
+
+**Create the table**
+
+```sql
+CREATE TABLE gold.mart_sales_vs_target (
+    employee_id TEXT,
+    year INTEGER,
+    month INTEGER,
+    plan_version TEXT,
+
+    actual_revenue NUMERIC(18,2),
+    target_revenue NUMERIC(18,2),
+
+    variance NUMERIC(18,2),
+    achievement_rate NUMERIC(10,4)
+);
+```
+
+**Load aggregated data**
+
+```sql
+INSERT INTO gold.mart_sales_vs_target (
+    employee_id,
+    year,
+    month,
+    plan_version,
+    actual_revenue,
+    target_revenue,
+    variance,
+    achievement_rate
+)
+
+SELECT
+    t.employee_id,
+    t.year,
+    t.month,
+    t.plan_version,
+
+    COALESCE(SUM(s.net_amount), 0) AS actual_revenue,
+
+    t.target_revenue,
+
+    COALESCE(SUM(s.net_amount), 0) - t.target_revenue
+        AS variance,
+
+    CASE
+        WHEN t.target_revenue = 0 THEN NULL
+        ELSE COALESCE(SUM(s.net_amount), 0)
+             / t.target_revenue
+    END AS achievement_rate
+
+FROM gold.fact_targets t
+
+LEFT JOIN gold.dim_employees e
+    ON t.employee_id = e.employee_id
+    AND MAKE_DATE(t.year, t.month, 1)
+        BETWEEN e.effective_from AND e.effective_to
+
+LEFT JOIN gold.fact_sales s
+    ON s.employee_key = e.employee_key
+    AND EXTRACT(YEAR FROM s.order_date)::INTEGER = t.year
+    AND EXTRACT(MONTH FROM s.order_date)::INTEGER = t.month
+
+GROUP BY
+    t.employee_id,
+    t.year,
+    t.month,
+    t.plan_version,
+    t.target_revenue;
+```
+
+**Validate the data**
+
+```sql
+-- Preview mart records
+SELECT *
+FROM gold.mart_sales_vs_target
+LIMIT 10;
+
+-- Compare actual revenue and target by plan version
+SELECT
+    plan_version,
+    is_latest,
+    SUM(actual_revenue) AS total_actual_revenue,
+    SUM(target_revenue) AS total_target_revenue,
+    AVG(achievement_pct) AS avg_achievement_pct
+FROM gold.mart_sales_vs_target
+GROUP BY plan_version, is_latest
+ORDER BY plan_version, is_latest;
+
+-- Check duplicate employee-month-version records
+SELECT
+    employee_id,
+    year,
+    month,
+    plan_version,
+    COUNT(*) AS total_records
+FROM gold.mart_sales_vs_target
+GROUP BY employee_id, year, month, plan_version
+HAVING COUNT(*) > 1;
+```
+
+</details>
+
+#### 3.3.2 — Build `mart_distributor_performance`
+
+<details>
+<summary><strong>View SQL — Create and Load mart_distributor_performance</strong></summary>
+
+**Create the table**
+
+```sql
+CREATE TABLE gold.mart_distributor_performance (
+    distributor_id TEXT,
+    distributor_name TEXT,
+    region TEXT,
+    tier TEXT,
+
+    total_orders INTEGER,
+    total_qty_ordered BIGINT,
+    total_qty_delivered BIGINT,
+
+    fill_rate_pct NUMERIC(10,2),
+
+    gross_revenue NUMERIC(18,2),
+    delivered_revenue NUMERIC(18,2),
+
+    ontime_orders INTEGER,
+    ontime_rate_pct NUMERIC(10,2)
+);
+```
+
+**Load aggregated data**
+
+```sql
+INSERT INTO gold.mart_distributor_performance (
+    distributor_id,
+    distributor_name,
+    region,
+    tier,
+
+    total_orders,
+    total_qty_ordered,
+    total_qty_delivered,
+
+    fill_rate_pct,
+
+    gross_revenue,
+    delivered_revenue,
+
+    ontime_orders,
+    ontime_rate_pct
+)
+SELECT
+    d.distributor_id,
+    d.distributor_name,
+    d.region,
+    d.tier,
+
+    COUNT(DISTINCT f.order_id) AS total_orders,
+
+    SUM(f.qty_ordered) AS total_qty_ordered,
+    SUM(f.qty_delivered) AS total_qty_delivered,
+
+    CASE
+        WHEN SUM(f.qty_ordered) = 0 THEN 0
+        ELSE
+            SUM(f.qty_delivered)::NUMERIC
+            / SUM(f.qty_ordered) * 100
+    END AS fill_rate_pct,
+
+    SUM(f.gross_amount) AS gross_revenue,
+    SUM(f.delivered_amount) AS delivered_revenue,
+
+    COUNT(DISTINCT f.order_id)
+        FILTER (WHERE f.ontime_delivery = 'Yes')
+        AS ontime_orders,
+
+    CASE
+        WHEN COUNT(DISTINCT f.order_id) = 0 THEN 0
+        ELSE
+            COUNT(DISTINCT f.order_id)
+            FILTER (WHERE f.ontime_delivery = 'Yes')::NUMERIC
+            / COUNT(DISTINCT f.order_id) * 100
+    END AS ontime_rate_pct
+
+FROM gold.fact_distributor_orders f
+
+LEFT JOIN gold.dim_distributors d
+    ON f.distributor_key = d.distributor_key
+
+GROUP BY
+    d.distributor_id,
+    d.distributor_name,
+    d.region,
+    d.tier;
+```
+
+**Validate the data**
+
+```sql
+-- Rank distributors by delivered revenue
+SELECT *
+FROM gold.mart_distributor_performance
+ORDER BY delivered_revenue DESC
+LIMIT 10;
+
+-- Check duplicate distributor records
+SELECT
+    distributor_id,
+    COUNT(*) AS total_records
+FROM gold.mart_distributor_performance
+GROUP BY distributor_id
+HAVING COUNT(*) > 1;
+```
+
+</details>
+
+## VI. Conclusions
+
+VietDist Analytics demonstrates the development of an end-to-end pipeline, transforming raw business data from multiple sources into structured, analysis-ready datasets.
+
+By combining Python-based data ingestion, SQL transformations, Medallion Architecture, and dimensional modeling, the project establishes a structured data foundation for analyzing sales, targets, returns, and distributor performance. It also applies SCD Type 2 to preserve employee history and manages multiple sales target versions to support historical and performance comparisons.
+
+The resulting Gold layer, consisting of dimension tables, fact tables, and analytical data marts, provides a foundation for business reporting and data-driven decision-making.
+
+Overall, this project demonstrates practical Data Engineering and Analytics Engineering skills, from source data integration and data quality management to data warehouse design and analytical data preparation.
 
